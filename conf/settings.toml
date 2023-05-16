@@ -1,0 +1,14 @@
+[default]
+#FastAPI
+fastapi_title = "type-registry-service"
+fastapi_description = "This service supports .."
+
+
+resources_path = "@format {env[BASE_DIR]}/resources/linkset"
+
+log_file = "@format {env[BASE_DIR]}/logs/dsg.log"
+#log_file = "../logs/dsg.log"
+log_level = 10
+log_format = "%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s"
+
+dans_formats_url = "https://raw.githubusercontent.com/ekoi/DANS-File-Formats/draft/dans-file-formats.json"

@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "type-registry-service"
+version = "0.1.5"
+description = ""
+authors = ["Eko Indarto <eko.indarto@dans.knaw.nl>"]
+readme = "README.md"
+include = ["resources/*", "logs/*", "conf/*"]
+packages = [
+    { include = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+uvicorn = "^0.20.0"
+dynaconf = "^3.1.11"
+fastapi = "^0.88.0"
+jsonpath-ng = "^1.5.3"
+requests = "^2.30.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
