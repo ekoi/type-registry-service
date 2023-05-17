@@ -4,21 +4,50 @@ import logging
 import requests
 import uvicorn
 from dynaconf import Dynaconf
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 from jsonpath_ng.ext import parse
+from starlette import status
 
-__version__ = importlib.metadata.metadata("type-registry-service")["version"]
-
-settings = Dynaconf(settings_files=["conf/settings.toml"],
+settings = Dynaconf(settings_files=["conf/settings.toml", "conf/.secrets.toml"],
                     environments=True)
 logging.basicConfig(filename=settings.LOG_FILE, level=settings.LOG_LEVEL,
                     format=settings.LOG_FORMAT)
+
+
+__version__ = importlib.metadata.metadata(settings.SERVICE_NAME)["version"]
+
+
+api_keys = [
+    settings.DANS_TYPE_REGISTRY_SERVICE_API_KEY
+]  #
+
+#Authorization Form: It doesn't matter what you type in the form, it won't work yet. But we'll get there.
+#See: https://fastapi.tiangolo.com/tutorial/security/first-steps/
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")  # use token authentication
+
+
+def api_key_auth(api_key: str = Depends(oauth2_scheme)):
+    if api_key not in api_keys:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Forbidden"
+        )
+
 
 app = FastAPI(title=settings.FASTAPI_TITLE, description=settings.FASTAPI_DESCRIPTION,
               version=__version__)
 
 data = {}
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event('startup')
 def common_data():
@@ -91,6 +120,18 @@ def retrieve_dans_formats():
     logging.debug("info")
 
     return data['dans_formats']
+
+
+@app.post('/dans-formats/refresh', dependencies=[Depends(api_key_auth)])
+def refresh_dans_formats():
+    url_resp = requests.get(settings.DANS_FORMATS_URL)
+    if url_resp.status_code == 200:
+        data.clear()
+        data.update({'dans_formats': url_resp.json()})
+        return data
+
+    else:
+        return HTTPException(400, f"Response status code '{url_resp.status_code}' from '{settings.DANS_FORMATS_URL}'")
 
 
 if __name__ == "__main__":

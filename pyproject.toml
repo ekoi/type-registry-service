@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "type-registry-service"
-version = "0.1.5"
+version = "0.1.7"
 description = ""
 authors = ["Eko Indarto <eko.indarto@dans.knaw.nl>"]
 readme = "README.md"
