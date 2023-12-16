@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "type-registry-service"
-version = "0.1.7"
+version = "0.1.8"
 description = ""
 authors = ["Eko Indarto <eko.indarto@dans.knaw.nl>"]
 readme = "README.md"
@@ -10,12 +10,14 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-uvicorn = "^0.20.0"
-dynaconf = "^3.1.11"
-fastapi = "^0.88.0"
-jsonpath-ng = "^1.5.3"
-requests = "^2.30.0"
+python = "^3.12"
+uvicorn = "^0.24.post1"
+dynaconf = "^3.2.3"
+fastapi = "^0.105.0"
+loguru = "^0.7.2"
+emoji = "^2.9.0"
+jsonpath-ng = "^1.6.0"
+requests = "^2.31.0"
 
 [build-system]
 requires = ["poetry-core"]

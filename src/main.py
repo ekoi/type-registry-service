@@ -1,6 +1,9 @@
 import importlib.metadata
+import json
 import logging
+from contextlib import asynccontextmanager
 
+import emoji
 import requests
 import uvicorn
 from dynaconf import Dynaconf
@@ -15,16 +18,14 @@ settings = Dynaconf(settings_files=["conf/settings.toml", "conf/.secrets.toml"],
 logging.basicConfig(filename=settings.LOG_FILE, level=settings.LOG_LEVEL,
                     format=settings.LOG_FORMAT)
 
-
 __version__ = importlib.metadata.metadata(settings.SERVICE_NAME)["version"]
-
 
 api_keys = [
     settings.DANS_TYPE_REGISTRY_SERVICE_API_KEY
 ]  #
 
-#Authorization Form: It doesn't matter what you type in the form, it won't work yet. But we'll get there.
-#See: https://fastapi.tiangolo.com/tutorial/security/first-steps/
+# Authorization Form: It doesn't matter what you type in the form, it won't work yet. But we'll get there.
+# See: https://fastapi.tiangolo.com/tutorial/security/first-steps/
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")  # use token authentication
 
 
@@ -36,8 +37,19 @@ def api_key_auth(api_key: str = Depends(oauth2_scheme)):
         )
 
 
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    print('start up')
+    common_data()
+    print(f'Available formats: {sorted(list(data.keys()))}')
+    data.update({"service-version": __version__})
+    print(emoji.emojize(':thumbs_up:'))
+
+    yield
+
+
 app = FastAPI(title=settings.FASTAPI_TITLE, description=settings.FASTAPI_DESCRIPTION,
-              version=__version__)
+              version=__version__, lifespan=lifespan)
 
 data = {}
 
@@ -49,16 +61,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event('startup')
+
 def common_data():
     logging.debug("startup")
 
     url_resp = requests.get(settings.DANS_FORMATS_URL)
     if url_resp.status_code == 200:
+        resp_json = url_resp.json()
+        logging.debug(json.dumps(resp_json))
         data.update({'dans_formats': url_resp.json()})
         return data
     # TODO: error or exit?
-    exit(1)
+    return HTTPException(status_code=500,
+                         detail=f'{settings.DANS_FORMATS_URL} not available. Response code: {url_resp.status_code}')
 
 
 @app.get('/')
@@ -79,7 +94,6 @@ def check_type(filetype: str):
         if match.value == filetype:
             logging.debug(f'Filetype match: {match.value}')
             return {"checked": filetype, "accepted": True}
-            break
 
     return {"checked": filetype, "accepted": False}
 
@@ -126,7 +140,7 @@ def retrieve_dans_formats():
 def refresh_dans_formats():
     url_resp = requests.get(settings.DANS_FORMATS_URL)
     if url_resp.status_code == 200:
-        data.clear()
+        data.pop("dans_formats")
         data.update({'dans_formats': url_resp.json()})
         return data
 
@@ -136,5 +150,5 @@ def refresh_dans_formats():
 
 if __name__ == "__main__":
     logging.info("Start")
-
+    print(emoji.emojize(':thumbs_up:'))
     uvicorn.run("src.main:app", host="0.0.0.0", port=2023, reload=False)
